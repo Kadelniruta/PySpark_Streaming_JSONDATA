@@ -1,0 +1,108 @@
+{
+  "facility": {
+    "facilityId": "FAC-001",
+    "name": "Manufacturing Plant Alpha",
+    "location": {
+      "building": "Building A",
+      "floor": 2,
+      "zone": "Production"
+    },
+    "sensors": [
+      {
+        "sensorId":  "SENS-TMP-001",
+        "type": "temperature",
+        "manufacturer": {
+          "name": "SensorTech Inc",
+          "model": "TMP-500X",
+          "calibration": {
+            "lastDate": "2025-11-15",
+            "nextDate": "2026-05-15",
+            "technician": {
+              "id": "TECH-42",
+              "name": "Robert Brown"
+            }
+          }
+        },
+        "readings":  [
+          {
+            "timestamp": "2026-01-04T08:00:00Z",
+            "value": 22.5,
+            "unit": "celsius",
+            "metadata": {
+              "quality": "good",
+              "confidence": 0.98
+            }
+          },
+          {
+            "timestamp": "2026-01-04T08:15:00Z",
+            "value": 23.1,
+            "unit": "celsius",
+            "metadata": {
+              "quality": "good",
+              "confidence": 0.97
+            }
+          },
+          {
+            "timestamp": "2026-01-04T08:30:00Z",
+            "value": 24.8,
+            "unit": "celsius",
+            "metadata": {
+              "quality":  "warning",
+              "confidence": 0.85,
+              "alerts": [
+                {
+                  "alertId": "ALT-001",
+                  "severity": "medium",
+                  "message": "Temperature approaching upper threshold"
+                }
+              ]
+            }
+          }
+        ],
+        "thresholds": {
+          "min": 18.0,
+          "max": 26.0,
+          "critical": {
+            "min": 15.0,
+            "max": 30.0
+          }
+        }
+      },
+      {
+        "sensorId": "SENS-HUM-001",
+        "type":  "humidity",
+        "manufacturer": {
+          "name": "SensorTech Inc",
+          "model": "HUM-300",
+          "calibration": {
+            "lastDate": "2025-10-20",
+            "nextDate": "2026-04-20",
+            "technician": {
+              "id":  "TECH-42",
+              "name": "Robert Brown"
+            }
+          }
+        },
+        "readings": [
+          {
+            "timestamp": "2026-01-04T08:00:00Z",
+            "value": 45.2,
+            "unit": "percent",
+            "metadata": {
+              "quality": "good",
+              "confidence":  0.99
+            }
+          }
+        ],
+        "thresholds":  {
+          "min": 30.0,
+          "max": 60.0,
+          "critical":  {
+            "min": 20.0,
+            "max": 70.0
+          }
+        }
+      }
+    ]
+  }
+}
