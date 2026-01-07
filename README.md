@@ -175,13 +175,6 @@ display(df)
 
 ---
 
-## 👤 Author
-
-**PySpark Data Engineering Implementation**
-
-Designed for learning and enterprise-style complex JSON processing using Spark.
-
----
 
 ## 🏁 Conclusion
 
