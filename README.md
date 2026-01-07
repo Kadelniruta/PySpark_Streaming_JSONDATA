@@ -1,34 +1,56 @@
-# Company Complex JSON Processing using PySpark
+# Complex JSON Processing & IoT Sensor Streaming using PySpark
 
 ## 📌 Overview
 
-This project demonstrates how to **read, flatten, and transform a deeply nested company JSON structure** using **Apache Spark (PySpark)** in a **Databricks environment**.
+This repository contains **two real-world PySpark data engineering implementations** executed in a **Databricks environment**:
 
-The pipeline reads a complex JSON file containing company, department, team, employee, project, and metrics data, then converts it into a **fully flattened, analytics-ready DataFrame**.
+1. **Company Complex JSON Processing** – Batch-style processing of deeply nested enterprise company data
+2. **IoT Sensor Streaming JSON Processing** – Near real-time style processing of hierarchical IoT sensor data
+
+Both pipelines demonstrate **best practices for handling complex nested JSON**, schema normalization, and building **analytics-ready flat tables** using Apache Spark.
 
 ---
 
-## 🏗️ Architecture & Flow
+## 🏗️ Overall Architecture
 
 ```
-JSON File (Nested)
-   ↓
-Spark Read (inferSchema, multiline)
-   ↓
-explode_outer (Departments → Teams → Members → Projects)
-   ↓
+Source JSON (Nested)
+      ↓
+Spark Read (JSON, inferSchema, multiline)
+      ↓
+explode_outer (Hierarchical Arrays)
+      ↓
 Column Selection & Aliasing
-   ↓
-Flattened DataFrame (Reporting / Analytics Ready)
+      ↓
+Flattened DataFrames
+      ↓
+Analytics / BI / Data Warehouse
 ```
 
 ---
 
-## 📂 Data Source
+## 🧰 Technologies Used
+
+* Apache Spark (PySpark)
+* Databricks Notebooks
+* Spark SQL Functions
+* Databricks Volumes
+
+---
+
+# 📘 Module 1: Company Complex JSON Processing
+
+## 🎯 Objective
+
+To transform a **deeply nested company JSON structure** containing departments, teams, employees, projects, and metrics into a **single flattened DataFrame** suitable for reporting and analytics.
+
+---
+
+## 📂 Data Source (Company)
 
 * **Format:** JSON
-* **Structure:** Highly nested (company → departments → teams → members → projects)
-* **Location (Databricks Volume):**
+* **Nature:** Batch / Historical
+* **Location:**
 
 ```
 /Volumes/workspace/pysparkcsv/companycomplex
@@ -36,146 +58,275 @@ Flattened DataFrame (Reporting / Analytics Ready)
 
 ---
 
-## 🧰 Technologies Used
+## 🧩 JSON Structure (Logical)
 
-* **Apache Spark (PySpark)**
-* **Databricks Notebook**
-* **Spark SQL Functions**
+```
+company
+ ├── headquarters
+ ├── departments[]
+ │     ├── teams[]
+ │     │     ├── members[]
+ │     │     │     └── projects[]
+ └── metrics
+       ├── employees
+       └── revenue
+```
 
 ---
 
-## 🚀 How It Works
+## 🔄 Processing Steps
 
 ### 1️⃣ Read Complex JSON
 
 ```python
-from pyspark.sql.functions import *
-from pyspark.sql.types import *
-
- df = spark.read.format('json') \
-   .option("inferschema", True) \
-   .option("multiline", True) \
-   .load("/Volumes/workspace/pysparkcsv/companycomplex")
+df = spark.read.format('json') \
+    .option("inferschema", True) \
+    .option("multiline", True) \
+    .load("/Volumes/workspace/pysparkcsv/companycomplex")
 ```
-
-* Automatically infers schema
-* Supports multi-line JSON objects
 
 ---
 
 ### 2️⃣ Flatten Nested Arrays
 
-The following nested arrays are exploded **safely using `explode_outer`** to avoid data loss when arrays are null:
+Arrays are expanded using **`explode_outer`** to ensure no data loss when arrays are empty or null.
 
-| Level      | JSON Path           |
+| Level      | Path                |
 | ---------- | ------------------- |
 | Department | company.departments |
 | Team       | departments.teams   |
 | Member     | teams.members       |
 | Project    | members.projects    |
 
-```python
-df = df.withColumn("departments", explode_outer("company.departments")) \
-       .withColumn("teams", explode_outer("departments.teams")) \
-       .withColumn("members", explode_outer("teams.members")) \
-       .withColumn("projects", explode_outer("members.projects"))
-```
-
 ---
 
-### 3️⃣ Column Selection & Normalization
+### 3️⃣ Data Normalization
 
-All required fields are selected and **renamed using meaningful aliases** to create a clean tabular dataset.
+The pipeline selects and aliases fields into logical groups:
 
-#### 🔹 Company Information
+#### 🔹 Company & Headquarters
 
-* `companyName`
-* `foundedYear`
+* Company Name, Founded Year
+* Address & Geo Coordinates
 
-#### 🔹 Headquarters Information
+#### 🔹 Department
 
-* Street, City, State, Country
-* Latitude & Longitude
-
-#### 🔹 Department Information
-
-* Department ID & Name
+* ID, Name
 * Annual Budget
-* Budget Breakdown (Salaries, Equipment, Training, Misc)
+* Budget Breakdown
 
-#### 🔹 Team Information
+#### 🔹 Team
 
-* Team ID & Name
-* Team Lead (Employee ID, Name, Email, Slack)
+* Team ID, Name
+* Team Lead Details
 
-#### 🔹 Employee Information
+#### 🔹 Employee
 
 * Employee ID, Name, Role
 * Skills (comma-separated)
 
-#### 🔹 Project Information
+#### 🔹 Project
 
-* Project ID
-* Project Name
-* Allocation Percentage
+* Project ID, Name
+* Allocation
 
 #### 🔹 Company Metrics
 
-**Employees:**
-
-* Total Employees
-* By Region (North America, Europe, Asia)
-* By Type (Full-time, Part-time, Contractor)
-
-**Revenue:**
-
-* Quarterly Revenue for 2024 & 2025
+* Employee distribution (Region & Type)
+* Quarterly revenue (2024–2025)
 
 ---
 
-## 📊 Final Output
+## 📊 Output Characteristics (Company)
 
-* **One row per project per employee per team per department**
-* Fully flattened schema
-* Ready for:
+* Grain: **One row per employee-project-team-department**
+* Fully denormalized
+* BI-ready & warehouse-friendly
 
-  * BI tools
-  * Data Warehousing
-  * Reporting
-  * Advanced analytics
+---
 
-```python
-display(df)
+# 📗 Module 2: IoT Sensor Streaming JSON Processing
+
+## 🎯 Objective
+
+To process **IoT sensor JSON data** containing facilities, sensors, readings, alerts, and thresholds, converting it into a **time-series friendly flattened dataset**.
+
+---
+
+## 📂 Data Source (IoT)
+
+* **Format:** JSON
+* **Nature:** Streaming-style / Incremental
+* **Location:**
+
+```
+/Volumes/workspace/pysparkcsv/iot_sensor
 ```
 
 ---
 
-## ✅ Key Design Decisions
+## 🧩 JSON Structure (Logical)
 
-* **`explode_outer` instead of `explode`** → prevents row loss when arrays are empty or null
-* **Explicit column aliasing** → improves readability & downstream usability
-* **Single flattened DataFrame** → simplifies joins and reporting
+```
+facility
+ ├── location
+ ├── sensors[]
+ │     ├── manufacturer
+ │     ├── thresholds
+ │     └── readings[]
+ │            └── metadata
+ │                 └── alerts[]
+```
+
+---
+
+## 🔄 Processing Steps
+
+### 1️⃣ Read IoT JSON
+
+```python
+df = spark.read.format('json') \
+    .option("inferschema", True) \
+    .option("multiline", True) \
+    .load("/Volumes/workspace/pysparkcsv/iot_sensor")
+```
+
+---
+
+### 2️⃣ Hierarchical Explosion
+
+Nested arrays are flattened in sequence:
+
+| Level   | Path                     |
+| ------- | ------------------------ |
+| Sensor  | facility.sensors         |
+| Reading | sensors.readings         |
+| Alert   | readings.metadata.alerts |
+
+---
+
+### 3️⃣ Data Normalization
+
+#### 🔹 Facility Information
+
+* Facility ID & Name
+* Building, Floor, Zone
+
+#### 🔹 Sensor Information
+
+* Sensor ID & Type
+* Manufacturer & Model
+* Calibration Details
+* Technician Info
+
+#### 🔹 Readings Information
+
+* Timestamp
+* Value & Unit
+* Quality & Confidence
+
+#### 🔹 Alerts Information
+
+* Alert ID
+* Severity
+* Message
+
+#### 🔹 Thresholds
+
+* Min / Max
+* Critical Min / Max
+
+---
+
+## 🚨 Alert Handling (IoT Module)
+
+Alerts are generated when sensor readings **violate defined thresholds** or when abnormal behavior is detected by the sensor metadata.
+
+### 🔹 Alert Source
+
+Alerts are nested inside the following JSON path:
+
+```
+readings.metadata.alerts[]
+```
+
+Each alert is associated with a **specific sensor reading**, ensuring accurate traceability.
+
+---
+
+### 🔹 Alert Attributes
+
+The following alert-related fields are extracted and flattened:
+
+| Column           | Description                                     |
+| ---------------- | ----------------------------------------------- |
+| `alert_id`       | Unique identifier for the alert                 |
+| `alert_severity` | Severity level (Low / Medium / High / Critical) |
+| `alert_message`  | Human-readable description of the issue         |
+
+---
+
+### 🔹 Why Alert Processing Is Important
+
+* Enables **real-time monitoring & incident response**
+* Helps identify **sensor failures or abnormal conditions**
+* Supports **SLA tracking and compliance**
+* Critical for **predictive maintenance and safety systems**
+
+---
+
+### 🔹 Data Grain Impact
+
+Including alerts changes the output grain to:
+
+> **One row per sensor → per reading → per alert**
+
+If a reading has multiple alerts, multiple rows are generated. If no alerts exist, `explode_outer` ensures the record is still retained.
+
+---
+
+## 📊 Output Characteristics (IoT)
+
+* Grain: **One row per sensor-reading-alert**
+* Time-series optimized
+* Suitable for monitoring dashboards, anomaly detection & alerting systems
+
+---
+
+## ✅ Key Design Principles (Both Pipelines)
+
+* `explode_outer` to prevent data loss
+* Explicit column aliasing for clarity
+* Flat schema for analytics efficiency
+* Modular & reusable transformations
 
 ---
 
 ## ⚠️ Assumptions
 
-* JSON structure remains consistent
-* Databricks environment is properly configured
-* Source data volume fits Spark cluster capacity
+* JSON schema remains consistent
+* Databricks runtime configured correctly
+* Data volume fits Spark cluster capacity
 
 ---
 
-## 📈 Possible Enhancements
+## 🚀 Future Enhancements
 
-* Add schema validation
-* Write output to Delta table
-* Partition by department or year
-* Add streaming support (Auto Loader)
+* Convert batch to Structured Streaming
+* Write output to Delta Lake
+* Add schema enforcement
+* Implement data quality checks
+* Partition by date / facility / department
 
 ---
 
+## 👤 Author
+
+**PySpark Data Engineering Project**
+Designed to demonstrate enterprise-grade handling of complex JSON and IoT data using Apache Spark.
+
+---
 
 ## 🏁 Conclusion
 
-This project is a **real-world example of handling enterprise-level nested JSON** using PySpark, demonstrating best practices in data flattening, schema design, and analytics readiness.
+This repository showcases **realistic enterprise and IoT data engineering use cases**, highlighting how PySpark can efficiently transform complex hierarchical JSON into actionable, analytics-ready datasets.
